@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G4K Main Admin Panel</title>
+    <style>
+        /* General Styles */
+        :root {
+            --primary-color: #82CAFF;
+            --secondary-color: #FFC107;
+            --text-color: #ffffff;
+            --bg-color: #121212;
+            --card-bg: #1f1f1f;
+            --input-bg: #333333;
+            --border-color: #555555;
+            --btn-hover: #66b2e2;
+            --border-radius: 12px;
+            --transition-speed: 0.3s;
+            --shadow-light: rgba(0, 0, 0, 0.3);
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: 0 4px 8px var(--shadow-light);
+            text-align: center;
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: var(--secondary-color);
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: inherit;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            box-sizing: border-box;
+        }
+
+        .btn-submit {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background var(--transition-speed);
+            margin-top: 10px;
+        }
+        
+        .btn-submit:hover {
+            background-color: var(--btn-hover);
+        }
+
+        .btn-approve {
+            background-color: #28a745;
+        }
+        .btn-approve:hover {
+            background-color: #218838;
+        }
+
+        .btn-disapprove {
+            background-color: #dc3545;
+        }
+        .btn-disapprove:hover {
+            background-color: #c82333;
+        }
+        
+        .message {
+            margin-top: 15px;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .success {
+            color: #28a745;
+        }
+        
+        .error {
+            color: #dc3545;
+        }
+
+        .pending-link-item {
+            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: var(--border-radius);
+            text-align: left;
+        }
+
+        .pending-link-item h4 {
+            margin: 0 0 10px 0;
+            color: var(--primary-color);
+        }
+
+        .pending-link-item p {
+            margin: 0 0 10px 0;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+        
+        .pending-link-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .pending-link-item .links-list {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0 0 0;
+        }
+
+        .pending-link-item .links-list li {
+            margin-bottom: 8px;
+            word-wrap: break-word;
+            word-break: break-all;
+        }
+
+        .pending-link-item .links-list a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .pending-link-item .links-list a:hover {
+            text-decoration: underline;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-buttons .btn-submit {
+            flex: 1;
+            margin-top: 0;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>G4K Main Admin Dashboard</h1>
+        <h3>Register New Admin</h3>
+        <p>Only you can see this page and register new team members.</p>
+        <div class="form-group">
+            <label for="registerUsername">Username</label>
+            <input type="text" id="registerUsername" placeholder="New admin username" />
+        </div>
+        <div class="form-group">
+            <label for="registerPassword">Password</label>
+            <input type="password" id="registerPassword" placeholder="New admin password" />
+        </div>
+        <button class="btn-submit" onclick="registerUser()">Register Admin</button>
+        <p id="registerMessage" class="message"></p>
+
+        <h3 style="margin-top: 30px;">Pending Apps</h3>
+        <p id="pendingLinksMessage" class="message"></p>
+        <div id="pendingLinksContainer"></div>
+        
+        <button class="btn-submit" style="margin-top: 20px;" onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        const registerUsernameInput = document.getElementById('registerUsername');
+        const registerPasswordInput = document.getElementById('registerPassword');
+        const registerMessage = document.getElementById('registerMessage');
+        const pendingLinksContainer = document.getElementById('pendingLinksContainer');
+        const pendingLinksMessage = document.getElementById('pendingLinksMessage');
+
+        async function checkSession() {
+            try {
+                const response = await fetch('ap.php?action=check_session');
+                const data = await response.json();
+                if (!data.is_main_owner) {
+                    window.location.href = 'a.html';
+                } else {
+                    await loadPendingLinks();
+                }
+            } catch (error) {
+                console.error('Error checking session:', error);
+                window.location.href = 'a.html';
+            }
+        }
+        
+        async function registerUser() {
+            const username = registerUsernameInput.value;
+            const password = registerPasswordInput.value;
+
+            if (!username || !password) {
+                registerMessage.textContent = 'Username and password are required.';
+                registerMessage.className = 'message error';
+                return;
+            }
+
+            registerMessage.textContent = 'Registering user...';
+            registerMessage.className = 'message';
+
+            try {
+                const response = await fetch('ap.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'register', username: username, password: password })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    registerMessage.textContent = data.message;
+                    registerMessage.className = 'message success';
+                    registerUsernameInput.value = '';
+                    registerPasswordInput.value = '';
+                } else {
+                    registerMessage.textContent = data.message;
+                    registerMessage.className = 'message error';
+                }
+            } catch (error) {
+                registerMessage.textContent = 'An error occurred. Please try again.';
+                registerMessage.className = 'message error';
+            }
+        }
+
+        async function loadPendingLinks() {
+            pendingLinksMessage.textContent = 'Loading pending apps...';
+            pendingLinksMessage.className = 'message';
+            try {
+                const response = await fetch('ap.php?action=get_pending_links');
+                const data = await response.json();
+
+                if (data.success) {
+                    pendingLinksContainer.innerHTML = '';
+                    if (data.links.length === 0) {
+                        pendingLinksMessage.textContent = 'No pending apps to approve.';
+                        pendingLinksMessage.className = 'message';
+                    } else {
+                        pendingLinksMessage.textContent = '';
+                        data.links.forEach((link, index) => {
+                            const linksHtml = link.links.map(l => `
+                                <li>
+                                    <a href="${l.url}" target="_blank">${l.url}</a><br>
+                                    Platform: ${l.platform}, Architecture: ${l.architecture}
+                                </li>
+                            `).join('');
+                            const linkHtml = `
+                                <div class="pending-link-item">
+                                    <h4>${link.title}</h4>
+                                    <p>${link.description}</p>
+                                    <img src="${link.image_url}" alt="${link.title} image" />
+                                    <ul class="links-list">${linksHtml}</ul>
+                                    <div class="action-buttons">
+                                        <button class="btn-submit btn-approve" onclick="approveLink('${index}')">Approve</button>
+                                        <button class="btn-submit btn-disapprove" onclick="disapproveLink('${index}')">Disapprove</button>
+                                    </div>
+                                </div>
+                            `;
+                            pendingLinksContainer.innerHTML += linkHtml;
+                        });
+                    }
+                } else {
+                    pendingLinksMessage.textContent = data.message;
+                    pendingLinksMessage.className = 'message error';
+                }
+            } catch (error) {
+                pendingLinksMessage.textContent = 'Failed to load pending links.';
+                pendingLinksMessage.className = 'message error';
+            }
+        }
+
+        async function approveLink(index) {
+            try {
+                const response = await fetch('ap.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'approve_link', index: index })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    await loadPendingLinks();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('An error occurred during approval.');
+            }
+        }
+
+        async function disapproveLink(index) {
+            if (confirm('Are you sure you want to disapprove this link? It will be permanently removed.')) {
+                try {
+                    const response = await fetch('ap.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'disapprove_link', index: index })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert(data.message);
+                        await loadPendingLinks();
+                    } else {
+                        alert(data.message);
+                    }
+                } catch (error) {
+                    alert('An error occurred during disapproval.');
+                }
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('ap.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'logout' })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = 'a.html';
+                }
+            } catch (error) {
+                console.error('Error logging out:', error);
+            }
+        }
+
+        window.onload = checkSession;
+    </script>
+</body>
+</html>
